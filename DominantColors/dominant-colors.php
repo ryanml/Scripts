@@ -1,6 +1,7 @@
 <?php
-	// This should be set to the file path
-	$file = '';
+// This should be set to the file path
+$file = '';
+if (!empty($file)) {
 	$file_path = pathinfo($file);
 	$image = $file_path['extension'] == 'png' ? imagecreatefrompng($file): imagecreatefromjpeg($file);
 	$image_x = imagesx($image);
@@ -17,21 +18,22 @@
 			array_push($hex_array, $hex);
 		}
 	}
-	// Converts array of rgb values to a hex string
-	function rgb_to_hex($rgb) { 
-		$hex = '#';
-		for ($i = 0; $i < count($rgb); $i++) {
-			$hex .= str_pad(dechex($rgb[$i]), 2, '0', STR_PAD_LEFT);
-		}
-		return $hex;
+} 
+// Converts array of rgb values to a hex string
+function rgb_to_hex($rgb) { 
+	$hex = '#';
+	for ($i = 0; $i < count($rgb); $i++) {
+		$hex .= str_pad(dechex($rgb[$i]), 2, '0', STR_PAD_LEFT);
 	}
-	// Uses some handy native functions to sort our array of hex values by occurences and returns the top 5
-	function get_dominant_five_colors($color_array) { 
-		$color_occurences= array_count_values($color_array);
-		arsort($color_occurences);
-		$dominant_five = array_slice($color_occurences, 0, 5);
-		return $dominant_five;
-	} 
+	return $hex;
+}
+// Uses some handy native functions to sort our array of hex values by occurences and returns the top 5
+function get_dominant_five_colors($color_array) { 
+	$color_occurences= array_count_values($color_array);
+	arsort($color_occurences);
+	$dominant_five = array_slice($color_occurences, 0, 5);
+	return $dominant_five;
+} 
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -39,17 +41,19 @@
 	<title>Dominant Colors</title>
 </head>
 <body>
-<div style="text-align:center">
-	<h1>Top 5 colors for <?php echo $file; ?></h1>
-	<img src="<?php echo $file; ?>"/><br/>
-<?php
-	$top_five = get_dominant_five_colors($hex_array);
+	<div style="text-align:center">
+<?php 
+	if (!empty($file)) {
+		echo "<h1>Top 5 colors for $file</h1>";
+		echo "<img src='$file'/><br/>";
+	} else {
+		echo "<h1>Please set the file path.</h1>";
+	}
+	$top_five = !isset($hex_array) ? array(): get_dominant_five_colors($hex_array);
 	foreach ($top_five as $key => $val) {
-?>
-		<span style="background:<?php echo $key; ?>"><?php echo $key; ?></span>
-<?php
+		echo "<span style='margin:5px;background:$key'>$key</span>";
 	}
 ?>
-</div>
+	</div>
 </body>
 </html>
