@@ -1,6 +1,6 @@
 <?php
 // This should be set to the file path
-$file = '';
+$file = 'test.jpg';
 if (!empty($file)) {
 	$file_path = pathinfo($file);
 	$image = $file_path['extension'] == 'png' ? imagecreatefrompng($file): imagecreatefromjpeg($file);
@@ -31,7 +31,8 @@ function rgb_to_hex($rgb) {
 function get_dominant_five_colors($color_array) { 
 	$color_occurences= array_count_values($color_array);
 	arsort($color_occurences);
-	$dominant_five = array_slice($color_occurences, 0, 5);
+	$slice = (count($color_occurences) >= 5) ? 5: count($color_occurences);
+	$dominant_five = array_slice($color_occurences, 0, $slice);
 	return $dominant_five;
 } 
 ?>
