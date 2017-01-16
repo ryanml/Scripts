@@ -6,9 +6,12 @@
 $plugin_folder = isset( $_GET['name'] ) ? $_GET['name'] : false;
 
 if ( ! $plugin_folder ) 
-    exit('No plugin specified in arguments.');
+    exit( 'No plugin specified in arguments.' );
 
 require( dirname(__FILE__) . '/wp-load.php' );
+
+if ( ! is_super_admin() )
+    exit( 'You lack the permissions to access this page.' );
 
 global $wpdb; 
 $plugin_index = -1;
