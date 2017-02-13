@@ -2,7 +2,7 @@
 // @name        Catalog Thread Viewer
 // @namespace   https://github.com/ryanml
 // @description Allows you to load posts under the post preview in catalog view
-// @include     *//boards.4chan.org/*/catalog
+// @include     *//boards.4chan.org/*/catalog*
 // @version     1
 // @grant       GM_addStyle
 // @grant       GM_xmlhttpRequest 
@@ -14,11 +14,22 @@
    */
   'use strict';
   $.noConflict();
-  var WIND = window;
-  var PROT = WIND.location.protocol; 
+  /* 
+   * URL pieces
+   */
+  var WIND  = window;
+  var PROT  = WIND.location.protocol; 
   var BOARD = $('body').attr('class')
                        .split('board_')[1];
-  var ENDP = `${PROT}//a.4cdn.org/${BOARD}/thread/`;
+  var ENDP  = `${PROT}//a.4cdn.org/${BOARD}/thread/`;
+  /* 
+   * Style values for dynamic themes
+   */
+  var isWS  = $('body').hasClass('ws');
+  var theme = isWS ? 'burichan' : 'futaba';
+  var primC = isWS ? '#C9CDE8' : '#EAD6CA'; 
+  var secnC = isWS ? '#D6DAF0' : '#F0E0D6';
+  var bordC = isWS ? '#B7C5D9' : '#D9BFB7';
   /* 
    * Fetches all replies to a thread given its id
    */
@@ -32,8 +43,11 @@
         synchronous: true
       }).responseText
     );
-    var postsObjs = results.posts;
-    return postsObjs.map(p => p.com);
+    var posts = results.posts;
+    return posts.map((p) => 
+        [p.name, p.no, 
+         p.com, p.ext]
+    ).slice(1, posts.length);
   };
   /*
    * Adds needed dom assets to thread block
@@ -42,26 +56,44 @@
     var $loadButton = $(
       '<button class="ctv-b ctv-pl"></button>'
     );
-    $loadButton.click(function() {
-      var $thread = $(this).parent()
-                           .parent();
-      var id = $thread.attr('id')
+    $loadButton.click(function(e) {
+      var $ctv = $item.find('.ctv-w');
+      $(this).toggleClass('ctv-pl ctv-ms');
+      if ($ctv.length > 0) {
+        e.preventDefault();
+        $ctv.toggleClass('ctv-d ctv-h');
+        return false;
+      }
+      var id = $item.attr('id')
                       .split('-')[1];
       var posts = fetchPosts(id);
+      var html = `<div class='ctv-w ctv-d'>`;
       for (var p = 0; p < posts.length; p++) {
-        $item.append(
-          `<div class='ctv-p'>
+        var name = posts[p][0];
+        var no   = posts[p][1];
+        var com  = posts[p][2] || '';
+        var file = posts[p][3] || false;
+        com = file ? `[i]<br/>${com}` : com;
+        html +=
+          `<div id='p${no}' class='ctv-p'>
              <div class='ctv-s'>
                <div class='ctv-n'>
-                 <span class='nameBlock'>Anonymous</span>
+                 <span class='ctv-t'>
+                   ${name}
+                 </span>
+                 <span class='ctv-i'>
+                   No.${no}
+                 </span>
                </div>
-               <blockquote class='ctv-m'>${posts[p]}</blockquote>
-            </div>
-          </div>`
-        );
+               <blockquote class='ctv-m'>
+                 ${com}
+               </blockquote>
+             </div>
+           </div>`;
       }
-      $thread.addClass('ctv-ofy');  
-      $thread.toggleClass('ctv-pl ctv-ml');
+      html += `</div>`;
+      $item.append(html);
+      $item.addClass('ctv-ofy');  
      });
     $item.addClass('ctv');
     $item.find('.meta').append($loadButton);
@@ -78,10 +110,10 @@
         background-size:100% !important;
       }
       .ctv-pl {
-        background:url(//s.4cdn.org/image/buttons/burichan/post_expand_plus@2x.png) no-repeat;
+        background:url(//s.4cdn.org/image/buttons/${theme}/post_expand_plus@2x.png) no-repeat;
       }
       .ctv-ms {
-        background:url(//s.4cdn.org/image/buttons/burichan/post_expand_minus@2x.png) no-repeat;
+        background:url(//s.4cdn.org/image/buttons/${theme}/post_expand_minus@2x.png) no-repeat;
       }
       .ctv-ofy { 
         overflow-y:scroll 
@@ -95,8 +127,8 @@
         padding:5px;
         display:block;
         overflow:hidden;
-        background-color:#c9cde8;
-        border-bottom:1px solid #B7C5D9;
+        background:${primC};
+        border-bottom:1px solid ${bordC};
       }
       .ctv-n {
         color:#117743;
@@ -105,16 +137,34 @@
         overflow-y:auto;
         text-align:left;
         padding:3px 3px;
-        border-bottom:1px solid #B7C5D9;
+        border-bottom:1px solid ${bordC};
+      }
+      .ctv-t {
+        float:left;
+        font-size:11px;
+        text-align:left;
+      }
+      .ctv-i {
+        float:right;
+        color:#000000;
+        font-size:9px;
+        margin-top:1px;
+        text-align:right;
       }
       .ctv-m {
         padding:3px 2px;
         text-align:left;
-        background:#D6DAF0;
+        background:${secnC};
       } 
-      .ctv-m > .quoteLink {
+      .ctv-m .quotelink {
         color:#D00 !important;
         text-decoration:underline;
+      }
+      .ctv-d {
+        display:block;
+      }
+      .ctv-h {
+        display:none;
       }`
     );
   }
