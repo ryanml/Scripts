@@ -1,7 +1,7 @@
 <?php
 /**
-* The purpose of this script, is to convert the 301 redirects that live in to WP Redirection and
-* write them to a map file that can be included in to nginx.conf.
+* The purpose of this script, is to convert the 301 redirects that live in WP Redirection and
+* write them to a map file that can be included in nginx.conf.
 * 
 * @author Ryan Lanese <ryanlanese@gmail.com>
 */
@@ -13,7 +13,7 @@ $redirect_file = 'site.redirects';
 $redirect_table = "{$prefix}redirection_items";
 
 $redirects = $wpdb->get_results(
-    "SELECT url, status, action_data FROM {$redirect_table}", ARRAY_A
+    "SELECT url, regex, status, action_data FROM {$redirect_table}", ARRAY_A
 );
 
 foreach( $redirects as $redirect ) {
@@ -23,7 +23,25 @@ foreach( $redirects as $redirect ) {
     $source = $redirect['url'];
     $target = $redirect['action_data'];
 
-    $rewrites[] = "rewrite {$source} {$target} permanent;";
+    if ( $redirect['regex'] === '0' ) {
+        $rewrites[] = "rewrite ^{$source}?$ {$target} permanent;";
+    }
+    else {
+        if (strpos($source, '(/|[.-]?)') !== false) {
+            $new_source = str_replace('(/|[.-]?)', '?(.*)', $source);
+            $new_source = "^{$new_source}$";
+        } elseif (strpos($source, '(\/|[.-]?)') !== false) {
+            $new_source = str_replace('(\/|[.-]?)', '?(.*)', $source);
+            $new_source = "^{$new_source}$";
+        } elseif (strpos($source, '*') !== false) {
+            $new_source = str_replace('*', '?(.*)', $source);
+            $new_source = "^{$new_source}$";
+        } else {
+            $new_source = "^{$source}?$";
+        }
+        $rewrites[] = "rewrite {$new_source} {$target}$1 permanent;";
+    }
+
 }
 
 $rewrites = join( $rewrites, "\n" );
