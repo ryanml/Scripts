@@ -10,13 +10,14 @@ require_once( 'wp-load.php' );
 global $wpdb;
 $prefix = $wpdb->prefix;
 $redirect_file = 'site.redirects';
+$regexes = ['(/|[.-]?)', '(\/|[.-]?)', '*'];
 $redirect_table = "{$prefix}redirection_items";
 
 $redirects = $wpdb->get_results(
     "SELECT url, regex, status, action_data FROM {$redirect_table}", ARRAY_A
 );
 
-foreach( $redirects as $redirect ) {
+foreach ( $redirects as $redirect ) {
     if ( $redirect['status'] !== 'enabled' ) 
         continue;
 
@@ -25,19 +26,15 @@ foreach( $redirects as $redirect ) {
 
     if ( $redirect['regex'] === '0' ) {
         $rewrites[] = "rewrite ^{$source}?$ {$target} permanent;";
-    }
-    else {
-        if (strpos($source, '(/|[.-]?)') !== false) {
-            $new_source = str_replace('(/|[.-]?)', '?(.*)', $source);
-            $new_source = "^{$new_source}$";
-        } elseif (strpos($source, '(\/|[.-]?)') !== false) {
-            $new_source = str_replace('(\/|[.-]?)', '?(.*)', $source);
-            $new_source = "^{$new_source}$";
-        } elseif (strpos($source, '*') !== false) {
-            $new_source = str_replace('*', '?(.*)', $source);
-            $new_source = "^{$new_source}$";
-        } else {
-            $new_source = "^{$source}?$";
+    } else {
+        foreach ( $regexes as &$regex ) {
+            if ( strpos( $source, $regex ) !== false ) {
+                $new_source = str_replace( $regex, '?(.*)', $source );
+                $new_source = "^{$new_source}$";
+                break;
+            } else {
+                $new_source = "^{$source}?$";
+            }
         }
         $rewrites[] = "rewrite {$new_source} {$target}$1 permanent;";
     }
